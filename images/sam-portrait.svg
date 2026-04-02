@@ -1,0 +1,6 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1100'>
+<rect width='900' height='1100' fill='#efe5dc'/>
+<path d='M130 950C240 710 640 620 760 930' stroke='#c96f4a' stroke-width='18' fill='none'/>
+<circle cx='450' cy='430' r='220' fill='#1e2430' opacity='.13'/>
+<text x='90' y='1040' font-size='52' fill='#1e2430' font-family='Georgia'>Sam Portrait Placeholder</text>
+</svg>
