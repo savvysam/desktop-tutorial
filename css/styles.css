@@ -1,0 +1,390 @@
+/* ==============================
+   Curl Up & Dye - Main Stylesheet
+   Dreamweaver-friendly, mobile-first
+   ============================== */
+
+/* ---------- 1) Design Tokens / Style Guide ---------- */
+:root {
+  --color-cream: #f7f2ea;
+  --color-stone: #e8dfd2;
+  --color-peach: #e7c8b5;
+  --color-ink: #1e2533;
+  --color-charcoal: #32353d;
+  --color-white: #ffffff;
+  --color-muted: #636a78;
+  --color-success: #2c6e4f;
+
+  --font-heading: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-body: "Inter", "Avenir Next", "Segoe UI", Arial, sans-serif;
+
+  --space-1: 0.5rem;
+  --space-2: 0.75rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
+  --space-7: 4rem;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --shadow-soft: 0 8px 24px rgba(30, 37, 51, 0.08);
+
+  --container: 72rem;
+}
+
+/* ---------- 2) Base ---------- */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-charcoal);
+  background: var(--color-cream);
+  line-height: 1.6;
+}
+img {
+  max-width: 100%;
+  display: block;
+  border-radius: var(--radius-md);
+}
+a { color: inherit; }
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  color: var(--color-ink);
+  line-height: 1.15;
+  margin-top: 0;
+}
+h1 { font-size: clamp(2rem, 5vw, 3.8rem); }
+h2 { font-size: clamp(1.6rem, 4vw, 2.6rem); }
+h3 { font-size: clamp(1.2rem, 2.5vw, 1.6rem); }
+
+p { margin-top: 0; }
+
+.container {
+  width: min(100% - 2rem, var(--container));
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: var(--space-6);
+}
+
+.section-muted {
+  background: var(--color-stone);
+}
+
+.eyebrow {
+  display: inline-block;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  margin-bottom: var(--space-2);
+}
+
+/* ---------- 3) Buttons ---------- */
+.btn,
+button.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.96rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-primary {
+  background: var(--color-ink);
+  color: var(--color-white);
+}
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background: #111722;
+}
+.btn-secondary {
+  background: transparent;
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  background: rgba(30, 37, 51, 0.08);
+}
+
+/* ---------- 4) Header + Navigation ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(247, 242, 234, 0.96);
+  border-bottom: 1px solid rgba(50, 53, 61, 0.12);
+  backdrop-filter: blur(4px);
+}
+.header-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 4.25rem;
+  gap: var(--space-3);
+}
+.logo {
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.nav-toggle {
+  background: transparent;
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+}
+.nav-toggle svg { width: 1.2rem; height: 1.2rem; }
+.main-nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background: var(--color-cream);
+  border-bottom: 1px solid rgba(50, 53, 61, 0.12);
+  display: none;
+}
+.main-nav.open { display: block; }
+.main-nav ul {
+  margin: 0;
+  padding: var(--space-3);
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+.main-nav a {
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.35rem 0;
+}
+.book-now-desktop { display: none; }
+
+.mobile-sticky-cta {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 35;
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---------- 5) Layout modules ---------- */
+.hero {
+  padding-block: var(--space-6);
+}
+.hero-grid {
+  display: grid;
+  gap: var(--space-5);
+  align-items: center;
+}
+.hero-copy p {
+  font-size: 1.1rem;
+  max-width: 44ch;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.hero-image {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.grid-cards {
+  display: grid;
+  gap: var(--space-3);
+}
+.card {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-soft);
+}
+.card p:last-child { margin-bottom: 0; }
+
+.gallery-strip {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+.gallery-strip img {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.split {
+  display: grid;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.quote {
+  border-left: 3px solid var(--color-peach);
+  padding-left: var(--space-3);
+  margin: 0;
+}
+
+.cta-band {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #f2e5d9 0%, #ecd5c6 60%, #e3dcd2 100%);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-soft);
+}
+
+.list-clean {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list-clean li { margin-bottom: var(--space-2); }
+
+/* ---------- 6) Services & pricing ---------- */
+.service-block {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: var(--space-3);
+}
+.service-item {
+  padding-block: var(--space-2);
+  border-bottom: 1px solid rgba(50, 53, 61, 0.15);
+}
+.service-item:last-child { border-bottom: 0; }
+.price { font-weight: 700; color: var(--color-ink); }
+.meta {
+  color: var(--color-muted);
+  font-size: 0.94rem;
+}
+
+/* ---------- 7) Portfolio ---------- */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.filter-btn {
+  border: 1px solid var(--color-ink);
+  background: transparent;
+  color: var(--color-ink);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+.filter-btn.is-active {
+  background: var(--color-ink);
+  color: var(--color-white);
+}
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+}
+.portfolio-item img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1.15;
+  object-fit: cover;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 23, 34, 0.88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  z-index: 50;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-height: 90vh;
+  max-width: min(90vw, 56rem);
+}
+
+/* ---------- 8) FAQ ---------- */
+.faq details {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.faq summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.faq p { margin-top: var(--space-2); }
+
+/* ---------- 9) Footer ---------- */
+.site-footer {
+  background: #181d28;
+  color: #e7e9ee;
+  padding-block: var(--space-5);
+  margin-top: var(--space-6);
+}
+.footer-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+.site-footer a { color: #f4d7c5; }
+
+/* ---------- 10) Utilities ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ---------- 11) Responsive enhancements ---------- */
+@media (min-width: 52rem) {
+  .nav-toggle { display: none; }
+  .main-nav {
+    position: static;
+    display: block;
+    border-bottom: 0;
+    background: transparent;
+  }
+  .main-nav ul {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .main-nav a:hover,
+  .main-nav a:focus-visible { text-decoration: underline; }
+  .book-now-desktop { display: inline-flex; }
+  .mobile-sticky-cta { display: none; }
+
+  .hero-grid,
+  .split,
+  .footer-grid,
+  .grid-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-cards.cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.top-gap { margin-top: var(--space-3); }
