@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seasonal Colour Analysis</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Seasonal Colour Analysis</h1>
+            <p class="subtitle">Upload a face photo to discover your personal armocromia season</p>
+            {% if analysis_mode == "ml_model_finetune" %}
+            <div class="mode-badge mode-badge--finetune">ML Model (Fine-tuned) — Real Inference</div>
+            {% elif analysis_mode == "ml_model" %}
+            <div class="mode-badge mode-badge--ml">ML Model (SVM Head) — Real Inference</div>
+            {% elif analysis_mode == "color_theory" %}
+            <div class="mode-badge mode-badge--theory">Colour Theory Analysis — SIVC Algorithm</div>
+            {% else %}
+            <div class="mode-badge mode-badge--mock">Demo Mode</div>
+            {% endif %}
+            {% if analysis_mode in ("ml_model_finetune", "ml_model") and configured_training_mode and
+                  ((analysis_mode == "ml_model_finetune" and configured_training_mode != "finetune") or
+                   (analysis_mode == "ml_model" and configured_training_mode == "finetune")) %}
+            <div class="mode-badge mode-badge--theory" style="margin-top:6px;font-size:.75rem;">
+                Next training configured: {{ "Fine-tuning" if configured_training_mode == "finetune" else "Feature extraction" }}
+                — <a href="/dataset" style="color:inherit;">retrain to apply</a>
+            </div>
+            {% endif %}
+        </header>
+
+        <main>
+            <div class="upload-card">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-icon">
+                        <svg id="uploadIcon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <img id="previewImg" src="" alt="Preview" style="display:none;">
+                    </div>
+                    <p class="drop-text">Drag & drop a clear face photo here</p>
+                    <p class="drop-subtext" id="dropSubtext">or</p>
+                    <label class="btn btn-secondary" for="fileInput">Choose File</label>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+                </div>
+
+                <div class="actions" id="analyzeSection" style="display:none;">
+                    <button class="btn btn-primary" onclick="analyze()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        Analyze My Season
+                    </button>
+                    <button class="btn btn-ghost" onclick="resetPhoto()">Choose Different Photo</button>
+                </div>
+
+                <div class="loading" id="loading" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Analyzing your colour season…</p>
+                </div>
+
+                <div class="error-msg" id="errorMsg" style="display:none;"></div>
+            </div>
+        </main>
+
+        <div id="resultsSection" style="display:none;"></div>
+
+        <section class="info-section">
+            <h2>About the 12-Season System</h2>
+            <p>This app uses the <strong>armocromia</strong> classification system, dividing personal colouring into 12 types across four seasons. Analysis uses the <strong>SIVC algorithm</strong> — measuring Subtone, Intensity, Value, and Contrast from your facial colours.</p>
+            <div class="season-grid">
+                <div class="season-card spring">
+                    <h3>Primavera (Spring)</h3>
+                    <ul><li>Primavera Bright</li><li>Primavera Light</li><li>Primavera Warm</li></ul>
+                </div>
+                <div class="season-card summer">
+                    <h3>Estate (Summer)</h3>
+                    <ul><li>Estate Cool</li><li>Estate Light</li><li>Estate Soft</li></ul>
+                </div>
+                <div class="season-card autumn">
+                    <h3>Autunno (Autumn)</h3>
+                    <ul><li>Autunno Deep</li><li>Autunno Soft</li><li>Autunno Warm</li></ul>
+                </div>
+                <div class="season-card winter">
+                    <h3>Inverno (Winter)</h3>
+                    <ul><li>Inverno Bright</li><li>Inverno Cool</li><li>Inverno Deep</li></ul>
+                </div>
+            </div>
+        </section>
+    </div>
+    <footer style="text-align:center;padding:24px 0 12px;font-size:.82rem;color:#9ca3af;">
+        <a href="/dataset" style="color:#6366f1;text-decoration:none;">
+            Dataset Manager &amp; Model Retrain
+        </a>
+    </footer>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

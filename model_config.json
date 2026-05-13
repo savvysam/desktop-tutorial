@@ -1,0 +1,13 @@
+{
+    "model_name": "efficientnet_b0",
+    "img_size": 224,
+    "num_classes": 12,
+    "checkpoint_path": "checkpoints/best_model.pth",
+    "training_mode": "finetune",
+    "loss": "focal",
+    "finetune_epochs": 5,
+    "initial_epochs": 2,
+    "n_passes": 1,
+    "note": "Fine-tuned end-to-end: efficientnet_b0, 5 epochs (2 head-only + remainder full fine-tune), loss=cross_entropy, LabelSmoothing/FocalLoss, ColorAugmentation. Inference: full model forward pass + softmax (no svm_head.pkl needed).",
+    "last_trained_at": "2026-05-11 15:37 UTC"
+}

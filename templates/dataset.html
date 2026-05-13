@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Manager — Seasonal Colour Analysis</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <style>
+        .ds-card {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e5e7eb);
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.04);
+        }
+        .ds-card h2 { margin: 0 0 6px; font-size: 1.15rem; }
+        .ds-card .subtitle { color: #6b7280; margin: 0 0 20px; font-size: .9rem; }
+
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px; }
+        .form-group label { font-size: .85rem; font-weight: 600; color: #374151; }
+        .form-group input {
+            padding: 9px 13px; border: 1px solid #d1d5db; border-radius: 8px;
+            font-size: .95rem; outline: none; transition: border-color .15s;
+        }
+        .form-group input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+
+        .progress-wrap { margin: 18px 0 10px; }
+        .progress-bar-track {
+            height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; background: linear-gradient(90deg,#6366f1,#a855f7);
+            border-radius: 5px; transition: width .4s ease;
+        }
+        .progress-label { font-size: .82rem; color: #6b7280; margin-top: 5px; }
+
+        .log-box {
+            background: #0f172a; color: #94a3b8; font-family: monospace; font-size: .78rem;
+            border-radius: 8px; padding: 14px; max-height: 280px; overflow-y: auto;
+            white-space: pre-wrap; word-break: break-all; margin-top: 16px;
+            display: none;
+        }
+        .log-box .ok  { color: #4ade80; }
+        .log-box .err { color: #f87171; }
+
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 10px; margin-top: 16px;
+        }
+        .class-cell {
+            background: #f9fafb; border: 1px solid #e5e7eb;
+            border-radius: 8px; padding: 10px 14px;
+        }
+        .class-cell strong { display: block; font-size: .85rem; margin-bottom: 4px; }
+        .class-cell span { font-size: .78rem; color: #6b7280; }
+
+        .badge-status {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: .78rem; font-weight: 600; margin-left: 10px; vertical-align: middle;
+        }
+        .badge-status.idle               { background: #f3f4f6; color: #6b7280; }
+        .badge-status.downloading        { background: #ede9fe; color: #7c3aed; }
+        .badge-status.retraining         { background: #fef3c7; color: #d97706; }
+        .badge-status.cancelled          { background: #ffedd5; color: #c2410c; }
+        .badge-status.download_cancelled { background: #ffedd5; color: #c2410c; }
+        .badge-status.done               { background: #d1fae5; color: #059669; }
+        .badge-status.error              { background: #fee2e2; color: #dc2626; }
+        .badge-status.badge-mode-fe      { background: #d1fae5; color: #065f46; }
+        .badge-status.badge-mode-ft      { background: #ede9fe; color: #4c1d95; }
+
+        #cancelBtn, #cancelDownloadBtn {
+            margin-left: 10px;
+            padding: 8px 18px;
+            background: #fff;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+        }
+        #cancelBtn:hover, #cancelDownloadBtn:hover { background: #fee2e2; border-color: #f87171; }
+        #cancelBtn:disabled, #cancelDownloadBtn:disabled { opacity: .4; cursor: not-allowed; }
+
+        .cancelled-notice {
+            display: none;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 14px;
+            color: #9a3412;
+            font-size: .9rem;
+        }
+
+        .epoch-progress-wrap {
+            display: none;
+            margin: 18px 0 6px;
+            padding: 14px 16px;
+            background: #fefce8;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+        }
+        .epoch-progress-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .epoch-phase-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 700;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+        .epoch-phase-badge.initial  { background: #dbeafe; color: #1d4ed8; }
+        .epoch-phase-badge.finetune { background: #ede9fe; color: #6d28d9; }
+        .epoch-counter {
+            font-size: .92rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .epoch-eta {
+            font-size: .82rem;
+            color: #6b7280;
+            margin-top: 6px;
+        }
+        .epoch-bar-track {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .epoch-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #a855f7);
+            border-radius: 4px;
+            transition: width .5s ease;
+        }
+
+        .step-note {
+            font-size: .82rem; background: #eff6ff; border: 1px solid #bfdbfe;
+            border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; color: #1d4ed8;
+            line-height: 1.6;
+        }
+        .step-note a { color: #2563eb; }
+        nav.back { margin-bottom: 20px; }
+        nav.back a { color: #6366f1; text-decoration: none; font-size: .9rem; }
+        nav.back a:hover { text-decoration: underline; }
+
+        /* Training mode toggle */
+        .mode-toggle { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+        .mode-toggle label {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px; border-radius: 10px; cursor: pointer;
+            border: 2px solid #e5e7eb; font-size: .9rem; font-weight: 600;
+            transition: border-color .15s, background .15s;
+            user-select: none;
+        }
+        .mode-toggle input[type=radio] { display: none; }
+        .mode-toggle label.checked-fe {
+            border-color: #10b981; background: #d1fae5; color: #065f46;
+        }
+        .mode-toggle label.checked-ft {
+            border-color: #7c3aed; background: #ede9fe; color: #4c1d95;
+        }
+        .mode-toggle label:not(.checked-fe):not(.checked-ft):hover {
+            border-color: #9ca3af; background: #f9fafb;
+        }
+
+        /* Training chart */
+        .training-chart-wrap {
+            display: none;
+            margin-top: 18px;
+            padding: 16px 18px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        .training-chart-title {
+            font-size: .82rem;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .training-chart-canvas-wrap {
+            position: relative;
+            height: 220px;
+        }
+        .mode-indicator {
+            width: 12px; height: 12px; border-radius: 50%;
+            border: 2px solid currentColor; flex-shrink: 0;
+            position: relative;
+        }
+        .mode-indicator::after {
+            content: ''; position: absolute;
+            inset: 2px; border-radius: 50%;
+            background: currentColor; opacity: 0;
+            transition: opacity .15s;
+        }
+        .mode-toggle label.checked-fe .mode-indicator::after,
+        .mode-toggle label.checked-ft .mode-indicator::after { opacity: 1; }
+
+        /* Finetune params panel */
+        .finetune-params {
+            display: none;
+            margin-top: 2px;
+            margin-bottom: 18px;
+            padding: 16px 18px;
+            background: #faf5ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 10px;
+        }
+        .finetune-params .params-title {
+            font-size: .82rem; font-weight: 700; color: #6d28d9;
+            margin-bottom: 12px; text-transform: uppercase; letter-spacing: .04em;
+        }
+        .finetune-params .form-row { margin-bottom: 0; }
+        .finetune-params select {
+            padding: 9px 13px; border: 1px solid #d1d5db; border-radius: 8px;
+            font-size: .95rem; outline: none; background: #fff;
+            transition: border-color .15s;
+        }
+        .finetune-params select:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Dataset Manager</h1>
+        <p class="subtitle">Download the Deep Armocromia dataset and retrain with real face photos</p>
+    </header>
+
+    <main>
+        <nav class="back"><a href="/">← Back to Colour Analysis</a></nav>
+
+        <!-- Step 1: Get password -->
+        <div class="ds-card">
+            <h2>Step 1 — Obtain the dataset password</h2>
+            <p class="subtitle">The Deep Armocromia dataset (ECCV 2024) is freely available for research,
+                but requires a short request form.</p>
+            <div class="step-note">
+                Fill in the
+                <a href="https://forms.gle/icac2opCYqF79RyE9" target="_blank" rel="noopener">
+                    Deep Armocromia request form
+                </a>
+                to receive the ZIP password from the authors.
+                Once you have it, enter it in Step 2 below.<br><br>
+                <strong>Dataset:</strong> 4,920 real labeled face images &middot;
+                12 armocromia sub-types &middot; ECCV 2024 Fashion AI Workshop &middot;
+                CelebA-based annotations.
+            </div>
+        </div>
+
+        <!-- Google Drive auth status -->
+        <div class="ds-card" id="driveAuthCard" style="padding:18px 28px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span style="font-size:.85rem; font-weight:600; color:#374151;">
+                    Google Drive
+                </span>
+                <span id="driveAuthBadge" style="
+                    display:inline-flex; align-items:center; gap:5px;
+                    padding:3px 10px; border-radius:20px; font-size:.78rem; font-weight:600;
+                    background:#f3f4f6; color:#6b7280;">
+                    <span id="driveAuthDot" style="width:7px;height:7px;border-radius:50%;background:#9ca3af;"></span>
+                    <span id="driveAuthMsg">Checking…</span>
+                </span>
+                <span id="driveAuthExpiry" style="font-size:.78rem; color:#9ca3af;"></span>
+                <button id="driveRefreshBtn" onclick="requestDriveTokenRefresh()"
+                    style="display:none; margin-left:auto; padding:5px 14px; border-radius:6px;
+                           border:1px solid #f87171; background:#fff; color:#dc2626;
+                           font-size:.8rem; font-weight:600; cursor:pointer;">
+                    ⟳ Refresh auth
+                </button>
+            </div>
+            <div id="driveExpiredWarning" style="
+                display:none; margin-top:10px; padding:10px 14px;
+                background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+                font-size:.82rem; color:#991b1b; line-height:1.6;">
+                The Google Drive authorisation has expired. To refresh it, type
+                <strong>"refresh the Google Drive token"</strong> in the chat with the assistant.
+                The assistant will write a fresh token automatically.
+            </div>
+        </div>
+
+        <!-- Step 2: Download subset -->
+        <div class="ds-card">
+            <h2>Step 2 — Download training images
+                <span class="badge-status" id="taskBadge">idle</span>
+            </h2>
+            <p class="subtitle">
+                Downloads a balanced subset of images from Google Drive using Range requests —
+                no need to download the full 1.6 GB ZIP.
+            </p>
+            <div class="form-row">
+                <div class="form-group" style="flex:2;min-width:200px;">
+                    <label for="zipPassword">ZIP Password (from request form)</label>
+                    <input type="password" id="zipPassword" placeholder="Enter dataset password">
+                </div>
+                <div class="form-group">
+                    <label for="trainN">Train images / class (max 445)</label>
+                    <input type="number" id="trainN" value="445" min="5" max="445">
+                </div>
+                <div class="form-group">
+                    <label for="testN">Test images / class (max 117)</label>
+                    <input type="number" id="testN" value="117" min="2" max="117">
+                </div>
+                <div class="form-group" style="min-width:auto;">
+                    <label>&nbsp;</label>
+                    <div style="display:flex; align-items:center;">
+                        <button class="btn btn-primary" id="downloadBtn" onclick="startDownload()">
+                            Start Download
+                        </button>
+                        <button id="cancelDownloadBtn" onclick="cancelDownload()" style="display:none;">
+                            Cancel download
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-wrap" id="progressWrap" style="display:none;">
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+                </div>
+                <div class="progress-label" id="progressLabel">Starting…</div>
+            </div>
+
+            <div class="cancelled-notice" id="downloadCancelledNotice"></div>
+            <div class="log-box" id="logBox"></div>
+        </div>
+
+        <!-- Step 3: Retrain -->
+        <div class="ds-card">
+            <h2>Step 3 — Retrain the model
+                <span class="badge-status {% if cfg_training_mode == 'finetune' %}badge-mode-ft{% else %}badge-mode-fe{% endif %}"
+                      id="modeBadge">
+                    {% if cfg_training_mode == 'finetune' %}Fine-tuning{% else %}Feature extraction{% endif %}
+                </span>
+            </h2>
+            <p class="subtitle">
+                Once images are downloaded, choose a training mode and run the pipeline to
+                produce a new checkpoint on the real Deep Armocromia data.
+            </p>
+
+            <!-- Training mode selector -->
+            <div style="font-size:.85rem; font-weight:700; color:#374151; margin-bottom:10px;">
+                Training mode
+            </div>
+            <div class="mode-toggle">
+                <label id="labelFE"
+                       class="{% if cfg_training_mode == 'finetune' %}{% else %}checked-fe{% endif %}">
+                    <input type="radio" name="trainingMode" value="feature_extraction"
+                           {% if cfg_training_mode != 'finetune' %}checked{% endif %}
+                           onchange="selectMode('feature_extraction')">
+                    <span class="mode-indicator"></span>
+                    Feature extraction + SVM head
+                </label>
+                <label id="labelFT"
+                       class="{% if cfg_training_mode == 'finetune' %}checked-ft{% endif %}">
+                    <input type="radio" name="trainingMode" value="finetune"
+                           {% if cfg_training_mode == 'finetune' %}checked{% endif %}
+                           onchange="selectMode('finetune')">
+                    <span class="mode-indicator"></span>
+                    Fine-tuning (end-to-end)
+                </label>
+            </div>
+
+            <!-- Finetune-specific parameters (shown only when finetune is selected) -->
+            <div class="finetune-params" id="finetuneParams"
+                 style="{% if cfg_training_mode == 'finetune' %}display:block{% endif %}">
+                <div class="params-title">Fine-tuning parameters</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="finetuneEpochs">Total epochs</label>
+                        <input type="number" id="finetuneEpochs"
+                               value="{{ cfg_finetune_epochs|default(30) }}"
+                               min="5" max="500">
+                    </div>
+                    <div class="form-group">
+                        <label for="initialEpochs">Initial (frozen backbone) epochs</label>
+                        <input type="number" id="initialEpochs"
+                               value="{{ cfg_initial_epochs|default(10) }}"
+                               min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="lossFunction">Loss function</label>
+                        <select id="lossFunction">
+                            <option value="label_smoothing"
+                                {% if cfg_loss in (None, 'label_smoothing') %}selected{% endif %}>
+                                Label Smoothing
+                            </option>
+                            <option value="focal"
+                                {% if cfg_loss == 'focal' %}selected{% endif %}>
+                                Focal Loss
+                            </option>
+                            <option value="cross_entropy"
+                                {% if cfg_loss == 'cross_entropy' %}selected{% endif %}>
+                                Cross Entropy
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <p style="margin:10px 0 0; font-size:.8rem; color:#7c3aed; line-height:1.5;">
+                    <strong>Stage 1</strong>: backbone frozen for <em>initial epochs</em> to warm up the head.
+                    <strong>Stage 2</strong>: all layers unfrozen for the remaining epochs.
+                    Requires PyTorch + timm to be installed.
+                </p>
+            </div>
+
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+                <button class="btn btn-primary" id="retrainBtn"
+                        onclick="startRetrain()"
+                        {% if not annotations_exists %}disabled title="Download data first"{% endif %}>
+                    Retrain Model
+                </button>
+                <button id="cancelBtn" onclick="cancelTraining()" style="display:none;">
+                    Cancel training
+                </button>
+                {% if model_loaded %}
+                <span style="font-size:.85rem; color:#059669;">
+                    ✓ A trained model is already loaded
+                </span>
+                {% endif %}
+            </div>
+            <!-- Epoch progress (shown during fine-tune retraining) -->
+            <div class="epoch-progress-wrap" id="epochProgressWrap">
+                <div class="epoch-progress-header">
+                    <span class="epoch-phase-badge" id="epochPhaseBadge">initial</span>
+                    <span class="epoch-counter" id="epochCounter">Epoch — / —</span>
+                </div>
+                <div class="epoch-bar-track">
+                    <div class="epoch-bar-fill" id="epochBarFill" style="width:0%"></div>
+                </div>
+                <div class="epoch-eta" id="epochEta"></div>
+            </div>
+
+            <!-- Live accuracy / loss chart -->
+            <div class="training-chart-wrap" id="trainingChartWrap">
+                <div class="training-chart-title">Live training metrics</div>
+                <div class="training-chart-canvas-wrap">
+                    <canvas id="trainingChart"></canvas>
+                </div>
+            </div>
+
+            <div class="cancelled-notice" id="cancelledNotice"></div>
+            <div class="done-notice" id="doneNotice" style="
+                display:none; background:#d1fae5; border:1px solid #6ee7b7;
+                border-radius:8px; padding:12px 16px; margin-top:14px;
+                color:#065f46; font-size:.9rem; font-weight:600;">
+            </div>
+        </div>
+
+        <!-- Current Model Status -->
+        <div class="ds-card">
+            <h2>Current Model Status</h2>
+            {% if model_loaded %}
+            <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
+                <div style="flex:1; min-width:200px;">
+                    <div style="font-size:.82rem; color:#6b7280; margin-bottom:4px;">Active inference engine</div>
+                    <div style="font-weight:700; font-size:1rem; color:#111827;">
+                        {% if ml_training_mode == 'finetune' %}
+                            ML Model — Fine-tuned (end-to-end)
+                        {% else %}
+                            ML Model — Feature extraction + SVM
+                        {% endif %}
+                    </div>
+                    <div style="margin-top:6px;">
+                        <span class="badge-status {% if ml_training_mode == 'finetune' %}badge-mode-ft{% else %}badge-mode-fe{% endif %}">
+                            {% if ml_training_mode == 'finetune' %}Fine-tuning{% else %}Feature extraction{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% if last_test_accuracy is not none %}
+                <div style="flex:0; min-width:140px; text-align:center; background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:14px 20px;">
+                    <div style="font-size:.78rem; color:#6b7280; margin-bottom:2px; text-transform:uppercase; letter-spacing:.04em;">Test Accuracy</div>
+                    <div style="font-size:2rem; font-weight:800; color:#059669; line-height:1.1;">{{ last_test_accuracy }}%</div>
+                    <div style="font-size:.7rem; color:#9ca3af; margin-top:4px;">vs 8.3% random</div>
+                </div>
+                {% endif %}
+                {% if last_trained_at %}
+                <div style="flex:0; min-width:160px; text-align:center; background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:14px 20px;">
+                    <div style="font-size:.78rem; color:#6b7280; margin-bottom:2px; text-transform:uppercase; letter-spacing:.04em;">Last Trained</div>
+                    <div style="font-size:.92rem; font-weight:600; color:#374151;">{{ last_trained_at }}</div>
+                </div>
+                {% endif %}
+            </div>
+            <p style="font-size:.82rem; color:#6b7280; margin-top:14px; line-height:1.5;">
+                The model is active and processing all photo uploads on the main page.
+                Use Step 3 above to retrain with a different mode or more data.
+            </p>
+            {% else %}
+            <div style="display:flex; align-items:center; gap:12px; padding:14px; background:#fefce8; border:1px solid #fde68a; border-radius:10px;">
+                <span style="font-size:1.5rem;">⚠️</span>
+                <div>
+                    <div style="font-weight:600; color:#92400e;">No ML model loaded</div>
+                    <div style="font-size:.85rem; color:#78350f; margin-top:2px;">
+                        Download the dataset (Step 2) and run Retrain (Step 3) to train a model.
+                        Until then, the app uses the SIVC colour-theory algorithm.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Current dataset stats -->
+        {% if dataset_counts %}
+        <div class="ds-card">
+            <h2>Current dataset contents</h2>
+            <div class="class-grid">
+                {% for cls, splits in dataset_counts.items() %}
+                <div class="class-cell">
+                    <strong>{{ cls }}</strong>
+                    <span>
+                        train: {{ splits.get('train', 0) }}
+                        &nbsp;|&nbsp;
+                        test: {{ splits.get('test', 0) }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<script>
+let pollInterval = null;
+let trainingChart = null;
+let _savedMode = '{{ cfg_training_mode if cfg_training_mode else "feature_extraction" }}';
+
+let _etaTicker      = null;   // setInterval handle for the per-second ETA countdown
+let _etaBase        = null;   // eta_seconds value at last anchor point
+let _etaBaseTime    = null;   // Date.now() at last anchor point
+let _lastKnownEpoch = null;   // epoch number when anchor was last set
+
+function startEtaTicker() {
+    if (_etaTicker) return;
+    _etaTicker = setInterval(() => {
+        if (_etaBase == null || _etaBaseTime == null) return;
+        const elapsed   = (Date.now() - _etaBaseTime) / 1000;
+        const displayed = Math.max(0, _etaBase - elapsed);
+        const etaEl = document.getElementById('epochEta');
+        if (etaEl) etaEl.textContent = fmtEta(displayed);
+    }, 1000);
+}
+
+function stopEtaTicker() {
+    if (_etaTicker) { clearInterval(_etaTicker); _etaTicker = null; }
+    _etaBase        = null;
+    _etaBaseTime    = null;
+    _lastKnownEpoch = null;
+}
+
+function initChart() {
+    if (trainingChart) return;
+    const ctx = document.getElementById('trainingChart').getContext('2d');
+    trainingChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Train Acc',
+                    data: [],
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,.08)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    tension: 0.3,
+                    yAxisID: 'yAcc',
+                },
+                {
+                    label: 'Val Acc',
+                    data: [],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,.08)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    tension: 0.3,
+                    yAxisID: 'yAcc',
+                },
+                {
+                    label: 'Train Loss',
+                    data: [],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245,158,11,.08)',
+                    borderWidth: 2,
+                    borderDash: [4, 3],
+                    pointRadius: 3,
+                    tension: 0.3,
+                    yAxisID: 'yLoss',
+                },
+                {
+                    label: 'Val Loss',
+                    data: [],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,.08)',
+                    borderWidth: 2,
+                    borderDash: [4, 3],
+                    pointRadius: 3,
+                    tension: 0.3,
+                    yAxisID: 'yLoss',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            animation: { duration: 300 },
+            plugins: {
+                legend: {
+                    labels: { font: { size: 11 }, boxWidth: 20 },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(4)}`,
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Epoch', font: { size: 11 } },
+                    ticks: { font: { size: 10 } },
+                },
+                yAcc: {
+                    type: 'linear',
+                    position: 'left',
+                    min: 0,
+                    max: 1,
+                    title: { display: true, text: 'Accuracy', font: { size: 11 } },
+                    ticks: {
+                        font: { size: 10 },
+                        callback: v => (v * 100).toFixed(0) + '%',
+                    },
+                    grid: { color: 'rgba(0,0,0,.06)' },
+                },
+                yLoss: {
+                    type: 'linear',
+                    position: 'right',
+                    min: 0,
+                    title: { display: true, text: 'Loss', font: { size: 11 } },
+                    ticks: { font: { size: 10 } },
+                    grid: { drawOnChartArea: false },
+                },
+            },
+        },
+    });
+}
+
+function updateChart(data) {
+    const wrap = document.getElementById('trainingChartWrap');
+    const trainAcc  = data.train_acc  || [];
+    const valAcc    = data.val_acc    || [];
+    const trainLoss = data.train_loss || [];
+    const valLoss   = data.val_loss   || [];
+    const n = trainAcc.length;
+
+    if (n === 0) {
+        wrap.style.display = 'none';
+        return;
+    }
+
+    wrap.style.display = 'block';
+    initChart();
+
+    const labels = Array.from({length: n}, (_, i) => i + 1);
+    trainingChart.data.labels             = labels;
+    trainingChart.data.datasets[0].data   = trainAcc;
+    trainingChart.data.datasets[1].data   = valAcc;
+    trainingChart.data.datasets[2].data   = trainLoss;
+    trainingChart.data.datasets[3].data   = valLoss;
+    trainingChart.update('none');
+}
+
+function statusColor(s) {
+    return {idle:'idle', downloading:'downloading', retraining:'retraining',
+            cancelled:'cancelled', download_cancelled:'download_cancelled',
+            done:'done', error:'error'}[s] || 'idle';
+}
+
+function setCancelBtnVisible(visible) {
+    const btn = document.getElementById('cancelBtn');
+    btn.style.display = visible ? 'inline-block' : 'none';
+    btn.disabled = false;
+}
+
+function setCancelDownloadBtnVisible(visible) {
+    const btn = document.getElementById('cancelDownloadBtn');
+    btn.style.display = visible ? 'inline-block' : 'none';
+    btn.disabled = false;
+    btn.textContent = 'Cancel download';
+}
+
+function showCancelledNotice(message) {
+    const el = document.getElementById('cancelledNotice');
+    el.style.display = 'block';
+    el.textContent = '⏸ ' + message;
+}
+
+function hideCancelledNotice() {
+    document.getElementById('cancelledNotice').style.display = 'none';
+}
+
+function showDoneNotice(message) {
+    const el = document.getElementById('doneNotice');
+    el.style.display = 'block';
+    el.textContent = '✓ ' + message;
+}
+
+function hideDoneNotice() {
+    document.getElementById('doneNotice').style.display = 'none';
+}
+
+function showDownloadCancelledNotice(message) {
+    const el = document.getElementById('downloadCancelledNotice');
+    el.style.display = 'block';
+    el.textContent = '⏸ ' + message;
+}
+
+function hideDownloadCancelledNotice() {
+    document.getElementById('downloadCancelledNotice').style.display = 'none';
+}
+
+async function startDownload() {
+    const pwd = document.getElementById('zipPassword').value.trim();
+    if (!pwd) { alert('Please enter the ZIP password.'); return; }
+    const train = parseInt(document.getElementById('trainN').value);
+    const test  = parseInt(document.getElementById('testN').value);
+
+    document.getElementById('downloadBtn').disabled = true;
+    document.getElementById('progressWrap').style.display = 'block';
+    document.getElementById('logBox').style.display = 'block';
+    document.getElementById('logBox').textContent = '';
+    hideCancelledNotice();
+    hideDoneNotice();
+    hideDownloadCancelledNotice();
+    setCancelDownloadBtnVisible(true);
+
+    const resp = await fetch('/dataset/start', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({password: pwd, train, test}),
+    });
+    if (!resp.ok) {
+        const err = await resp.json();
+        alert('Error: ' + (err.error || 'Unknown'));
+        document.getElementById('downloadBtn').disabled = false;
+        setCancelDownloadBtnVisible(false);
+        return;
+    }
+    startPolling();
+}
+
+async function cancelDownload() {
+    const btn = document.getElementById('cancelDownloadBtn');
+    btn.disabled = true;
+    btn.textContent = 'Cancelling…';
+    try {
+        const resp = await fetch('/dataset/cancel', {method:'POST'});
+        if (!resp.ok) {
+            const err = await resp.json();
+            alert('Could not cancel: ' + (err.error || 'Unknown'));
+            btn.disabled = false;
+            btn.textContent = 'Cancel download';
+        } else {
+            // Re-enable download immediately without waiting for next poll tick
+            setCancelDownloadBtnVisible(false);
+            document.getElementById('downloadBtn').disabled = false;
+        }
+    } catch (e) {
+        alert('Error: ' + e);
+        btn.disabled = false;
+        btn.textContent = 'Cancel download';
+    }
+}
+
+function getSelectedMode() {
+    const radios = document.querySelectorAll('input[name="trainingMode"]');
+    for (const r of radios) { if (r.checked) return r.value; }
+    return 'feature_extraction';
+}
+
+function applyModeUI(mode) {
+    const labelFE = document.getElementById('labelFE');
+    const labelFT = document.getElementById('labelFT');
+    const panel   = document.getElementById('finetuneParams');
+    const badge   = document.getElementById('modeBadge');
+    document.querySelectorAll('input[name="trainingMode"]').forEach(r => {
+        r.checked = (r.value === mode);
+    });
+    if (mode === 'finetune') {
+        labelFE.className = '';
+        labelFT.className = 'checked-ft';
+        panel.style.display = 'block';
+        badge.className    = 'badge-status badge-mode-ft';
+        badge.textContent  = 'Fine-tuning';
+    } else {
+        labelFE.className = 'checked-fe';
+        labelFT.className = '';
+        panel.style.display = 'none';
+        badge.className    = 'badge-status badge-mode-fe';
+        badge.textContent  = 'Feature extraction';
+    }
+}
+
+function setModeToggleDisabled(disabled) {
+    document.querySelectorAll('input[name="trainingMode"]').forEach(r => {
+        r.disabled = disabled;
+    });
+}
+
+async function selectMode(mode) {
+    // _savedMode tracks the last successfully persisted mode (not the radio state,
+    // which is already updated by the browser before onchange fires).
+    if (_savedMode === mode) return;
+    const prevMode = _savedMode;
+    applyModeUI(mode);
+    setModeToggleDisabled(true);
+    try {
+        const resp = await fetch('/dataset/set-mode', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({training_mode: mode}),
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            console.error('Failed to save training mode:', err.error || resp.status);
+            applyModeUI(prevMode);
+            alert('Could not save training mode: ' + (err.error || 'Unknown error'));
+        } else {
+            _savedMode = mode;
+        }
+    } catch (e) {
+        console.error('Failed to persist training mode:', e);
+        applyModeUI(prevMode);
+        alert('Could not save training mode: network error.');
+    } finally {
+        setModeToggleDisabled(false);
+    }
+}
+
+async function startRetrain() {
+    document.getElementById('retrainBtn').disabled = true;
+    document.getElementById('logBox').style.display = 'block';
+    document.getElementById('logBox').textContent = '';
+    document.getElementById('progressWrap').style.display = 'block';
+    hideCancelledNotice();
+    hideDoneNotice();
+
+    const mode = getSelectedMode();
+    const body = { training_mode: mode };
+    if (mode === 'finetune') {
+        body.finetune_epochs = parseInt(document.getElementById('finetuneEpochs').value) || 30;
+        body.initial_epochs  = parseInt(document.getElementById('initialEpochs').value)  || 10;
+        body.loss            = document.getElementById('lossFunction').value;
+    }
+
+    const resp = await fetch('/dataset/retrain', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+        const err = await resp.json();
+        alert('Error: ' + (err.error || 'Unknown'));
+        document.getElementById('retrainBtn').disabled = false;
+        return;
+    }
+    setCancelBtnVisible(true);
+    startPolling();
+}
+
+async function cancelTraining() {
+    const btn = document.getElementById('cancelBtn');
+    btn.disabled = true;
+    btn.textContent = 'Cancelling…';
+    try {
+        const resp = await fetch('/dataset/cancel', {method:'POST'});
+        if (!resp.ok) {
+            const err = await resp.json();
+            alert('Could not cancel: ' + (err.error || 'Unknown'));
+            btn.disabled = false;
+            btn.textContent = 'Cancel training';
+        }
+    } catch (e) {
+        alert('Error: ' + e);
+        btn.disabled = false;
+        btn.textContent = 'Cancel training';
+    }
+}
+
+function startPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(pollStatus, 1200);
+    pollStatus();
+}
+
+function fmtEta(seconds) {
+    if (seconds == null || seconds < 0) return '';
+    if (seconds < 60) return `~${Math.round(seconds)}s remaining`;
+    const mins = Math.round(seconds / 60);
+    if (mins < 60) return `~${mins} min remaining`;
+    const hrs  = Math.floor(mins / 60);
+    const rem  = mins % 60;
+    return rem > 0 ? `~${hrs}h ${rem}m remaining` : `~${hrs}h remaining`;
+}
+
+function updateEpochProgress(data) {
+    const wrap    = document.getElementById('epochProgressWrap');
+    const badge   = document.getElementById('epochPhaseBadge');
+    const counter = document.getElementById('epochCounter');
+    const fill    = document.getElementById('epochBarFill');
+    const eta     = document.getElementById('epochEta');
+
+    const isRetraining   = data.status === 'retraining';
+    const isFinetuneMode = data.training_mode === 'finetune';
+    const hasEpochInfo   = data.current_epoch != null && data.total_epochs != null;
+
+    if (isRetraining && isFinetuneMode && hasEpochInfo) {
+        // Active fine-tune run with known epoch position
+        const cur   = data.current_epoch;
+        const total = data.total_epochs;
+        const pct   = total > 0 ? Math.round(cur / total * 100) : 0;
+        const phase = data.phase || 'initial';
+        const phaseLabel = phase === 'finetune' ? 'Fine-Tuning' : 'Initial Training';
+
+        wrap.style.display  = 'block';
+        badge.className     = 'epoch-phase-badge ' + phase;
+        badge.textContent   = phaseLabel;
+        counter.textContent = `Epoch ${cur} / ${total}`;
+        fill.style.width    = pct + '%';
+
+        // Re-anchor the ticker only when an epoch advances or on the very
+        // first poll — this lets the countdown tick freely between polls
+        // without jumping back to the server value every 1.2 s.
+        if (data.eta_seconds != null) {
+            const epochAdvanced = data.current_epoch !== _lastKnownEpoch;
+            if (epochAdvanced || _etaBase == null) {
+                _etaBase        = data.eta_seconds;
+                _etaBaseTime    = Date.now();
+                _lastKnownEpoch = data.current_epoch;
+            }
+            // Show the current interpolated value immediately
+            const elapsed   = (Date.now() - _etaBaseTime) / 1000;
+            const displayed = Math.max(0, _etaBase - elapsed);
+            eta.textContent = fmtEta(displayed);
+            startEtaTicker();
+        } else {
+            // No ETA from server — stop any running ticker to avoid stale repaints
+            stopEtaTicker();
+            eta.textContent = '';
+        }
+    } else if (isRetraining && isFinetuneMode && !hasEpochInfo) {
+        // Fine-tune run started but no epoch completed yet — hide to avoid stale data
+        stopEtaTicker();
+        wrap.style.display  = 'block';
+        badge.className     = 'epoch-phase-badge initial';
+        badge.textContent   = 'Initial Training';
+        counter.textContent = 'Epoch — / —';
+        fill.style.width    = '0%';
+        eta.textContent     = '';
+    } else {
+        // Not retraining in finetune mode — keep bar hidden
+        stopEtaTicker();
+        wrap.style.display = 'none';
+        eta.textContent    = '';
+    }
+}
+
+async function pollStatus() {
+    try {
+        const resp = await fetch('/dataset/status');
+        const data = await resp.json();
+
+        // Badge
+        const badge = document.getElementById('taskBadge');
+        badge.className = 'badge-status ' + statusColor(data.status);
+        badge.textContent = data.status.replace('_', ' ');
+
+        // Show/hide cancel buttons
+        setCancelBtnVisible(data.status === 'retraining');
+        setCancelDownloadBtnVisible(data.status === 'downloading');
+
+        // Epoch progress bar (fine-tune)
+        updateEpochProgress(data);
+
+        // Live accuracy / loss chart
+        updateChart(data);
+
+        // Progress bar (download)
+        if (data.total > 0) {
+            const pct = Math.round(data.progress / data.total * 100);
+            document.getElementById('progressFill').style.width = pct + '%';
+            document.getElementById('progressLabel').textContent =
+                `${data.progress} / ${data.total} images  (${pct}%)`;
+        } else if (data.message) {
+            document.getElementById('progressLabel').textContent = data.message;
+        }
+
+        // Log box
+        const logBox = document.getElementById('logBox');
+        if (data.log && data.log.length) {
+            logBox.innerHTML = data.log.map(l => {
+                const cls = l.includes('✓') ? 'ok' : l.includes('✗') || l.includes('⚠') ? 'err' : '';
+                return `<span class="${cls}">${escHtml(l)}</span>`;
+            }).join('\n');
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // Download cancelled state
+        if (data.status === 'download_cancelled') {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            setCancelDownloadBtnVisible(false);
+            document.getElementById('downloadBtn').disabled = false;
+            showDownloadCancelledNotice(data.message || 'Download cancelled — click Start Download to try again.');
+            return;
+        }
+
+        // Training cancelled state
+        if (data.status === 'cancelled') {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            stopEtaTicker();
+            setCancelBtnVisible(false);
+            document.getElementById('downloadBtn').disabled = false;
+            document.getElementById('retrainBtn').disabled = false;
+            document.getElementById('epochProgressWrap').style.display = 'none';
+            showCancelledNotice(data.message || 'Training paused — click Retrain to resume.');
+            return;
+        }
+
+        // Finished (done / error)
+        if (data.status === 'done' || data.status === 'error') {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            stopEtaTicker();
+            setCancelBtnVisible(false);
+            setCancelDownloadBtnVisible(false);
+            document.getElementById('downloadBtn').disabled = false;
+            document.getElementById('retrainBtn').disabled = false;
+            if (data.status === 'done') {
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('progressLabel').textContent = data.message || 'Complete!';
+                // Show green success banner with accuracy if available
+                const acc = data.last_test_accuracy;
+                const doneMsg = acc != null
+                    ? `${data.message || 'Retraining complete!'} (4.1× above random chance)`
+                    : (data.message || 'Task complete!');
+                showDoneNotice(doneMsg);
+                // Epoch bar stays visible (don't hide it — user can review final epoch)
+                // Chart stays visible too (updateChart already handles this via data arrays)
+            } else {
+                document.getElementById('epochProgressWrap').style.display = 'none';
+                hideDoneNotice();
+            }
+        }
+    } catch (e) {
+        console.error('Poll error:', e);
+    }
+}
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Google Drive token status ──────────────────────────────────────────────
+async function updateDriveAuthStatus() {
+    try {
+        const resp = await fetch('/admin/drive-token-status');
+        if (!resp.ok) return;
+        const d = await resp.json();
+        const dot  = document.getElementById('driveAuthDot');
+        const msg  = document.getElementById('driveAuthMsg');
+        const exp  = document.getElementById('driveAuthExpiry');
+        const btn  = document.getElementById('driveRefreshBtn');
+        const warn = document.getElementById('driveExpiredWarning');
+        const badge = document.getElementById('driveAuthBadge');
+
+        const soonThreshold = 10 * 60; // 10 minutes
+        if (d.valid) {
+            const expiring = d.seconds_remaining !== null && d.seconds_remaining < soonThreshold;
+            if (expiring) {
+                dot.style.background = '#f59e0b';
+                badge.style.background = '#fffbeb';
+                badge.style.color = '#b45309';
+            } else {
+                dot.style.background = '#22c55e';
+                badge.style.background = '#f0fdf4';
+                badge.style.color = '#15803d';
+            }
+            msg.textContent = d.message;
+            exp.textContent = d.expires_at
+                ? 'until ' + new Date(d.expires_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + ' UTC'
+                : '';
+            btn.style.display = expiring ? 'block' : 'none';
+            warn.style.display = 'none';
+            if (expiring) {
+                warn.style.display = 'block';
+                warn.innerHTML = '⚠ Token expires soon — ask the assistant to refresh it before starting a download: <strong>"refresh the Google Drive token"</strong>.';
+                warn.style.background = '#fffbeb';
+                warn.style.borderColor = '#fcd34d';
+                warn.style.color = '#92400e';
+            }
+        } else {
+            dot.style.background = '#ef4444';
+            badge.style.background = '#fef2f2';
+            badge.style.color = '#b91c1c';
+            msg.textContent = d.expired ? 'Token expired' : 'Not connected';
+            exp.textContent = '';
+            btn.style.display = 'block';
+            warn.style.display = 'block';
+            warn.innerHTML = 'The Google Drive authorisation has expired. To refresh it, type <strong>"refresh the Google Drive token"</strong> in the chat with the assistant. The assistant will write a fresh token automatically.';
+            warn.style.background = '#fef2f2';
+            warn.style.borderColor = '#fecaca';
+            warn.style.color = '#991b1b';
+        }
+    } catch(e) { /* silent — status is cosmetic */ }
+}
+
+function requestDriveTokenRefresh() {
+    document.getElementById('driveExpiredWarning').style.display = 'block';
+}
+
+// Poll token status every 60 s so the badge stays current
+updateDriveAuthStatus();
+setInterval(updateDriveAuthStatus, 60_000);
+
+// Auto-check status on load (in case a task is already running)
+window.addEventListener('load', async () => {
+    const resp = await fetch('/dataset/status');
+    const data = await resp.json();
+    if (data.status === 'download_cancelled') {
+        document.getElementById('progressWrap').style.display = 'block';
+        document.getElementById('logBox').style.display = 'block';
+        showDownloadCancelledNotice(data.message || 'Download cancelled — click Start Download to try again.');
+    } else if (data.status === 'cancelled') {
+        document.getElementById('progressWrap').style.display = 'block';
+        document.getElementById('logBox').style.display = 'block';
+        showCancelledNotice(data.message || 'Training paused — click Retrain to resume.');
+    } else if (data.status !== 'idle') {
+        document.getElementById('progressWrap').style.display = 'block';
+        document.getElementById('logBox').style.display = 'block';
+        if (data.status === 'downloading') {
+            setCancelDownloadBtnVisible(true);
+        } else if (data.status === 'retraining') {
+            setCancelBtnVisible(true);
+        }
+        startPolling();
+    }
+});
+</script>
+</body>
+</html>

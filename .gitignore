@@ -1,0 +1,35 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.venv
+venv/
+dist/
+build/
+*.egg-info/
+installer_output/
+*.spec.bak
+.DS_Store
+Thumbs.db
+uploads/
+
+# Large training dataset — not committed to git
+dataset/
+
+# Model checkpoints — too large for git (use releases or LFS if needed)
+checkpoints/
+
+# Replit local package cache
+.pythonlibs/
+.cache/
+uv.lock
+
+# Dev-only mockup sandbox (node_modules etc.)
+artifacts/mockup-sandbox/node_modules/
+artifacts/mockup-sandbox/dist/
+
+# Replit internal agent state
+.local/
+attached_assets/

@@ -1,0 +1,36 @@
+# Training dataset — 1.7 GB, not needed at runtime
+dataset/
+
+# Dev-only mockup sandbox (Vite + node_modules)
+artifacts/
+
+# iOS SwiftUI source — reference only, not deployed
+ColorSeasonApp/
+ColorSeasonApp.spec
+ColorSeasonApp_mac.spec
+
+# ML training framework — not needed for inference serving
+SeasonalColourClassification/
+train.py
+download_dataset.py
+
+# Windows/Mac build scripts and docs
+installer/
+BUILD_WINDOWS.md
+BUILD_MAC.md
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local package cache
+.cache/
+uv.lock
+
+# Git history
+.git/
+
+# Replit local agent state
+.local/
+attached_assets/

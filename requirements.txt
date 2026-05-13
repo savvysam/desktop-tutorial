@@ -1,0 +1,34 @@
+# Web app (always required)
+flask>=3.0.0
+Pillow>=10.0.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+gunicorn>=21.0.0
+
+# ML inference (required to use a trained model checkpoint)
+# torch>=2.0.0
+# torchvision>=0.15.0
+# timm>=0.9.0
+
+# ML training (SeasonalColourClassification module)
+# torch>=2.0.0
+# torchvision>=0.15.0
+# timm>=0.9.0
+# scikit-learn>=1.3.0
+# matplotlib>=3.7.0
+# seaborn>=0.12.0
+# tqdm>=4.65.0
+# neptune-client>=1.0.0
+# optuna>=3.0.0
+# plotly>=5.0.0
+# kaleido>=0.2.1
+
+# Windows .exe packaging
+# pyinstaller>=6.0.0
+opencv-python
+scikit-image
+scikit-learn
+timm
+torch
+torchvision
+tqdm
